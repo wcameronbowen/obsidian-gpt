@@ -87,4 +87,4 @@ def read_markdown_notes(folder_path: str) -> dict[str, dict[str, str]]:
                     notes[(file_path.lstrip("./"), section_id)] = cleaned_txt
     return notes
 
-read_markdown_notes("./_scripts/test-files/")
+read_markdown_notes("./tests/")
