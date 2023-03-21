@@ -14,7 +14,7 @@ from tabulate import tabulate
 
 
 # CONFIG
-openai.api_key = ""
+openai.api_key = os.environ.get('OPENAI_API_TOKEN')
 DF_FILE = "_scripts/embeddings.csv"
 CACHE_FILE = "_scripts/query_cache.pkl"
 
@@ -78,14 +78,14 @@ def extract_sections(file_path: str) -> dict[str, str]:
 
 def clean_section(txt: str) -> str:
     # Clean a text block, removing frontmatter, formatting, empty lines.
-    if "#atom" in txt or "#molecule" in txt:
-        txt = txt.split("---")[0]
-    elif "#source" in txt:
-        txt = txt.split("---")[1]
+    excludes = ["*see", "mocs:", "tags:"]
+    for exclude in excludes:
+      if exclude in txt:
+        return ""
 
     txt = re.sub(r"\[(.*?)\]\((.*?)\)", r"\1", txt)
 
-    repl = ["[[", "]]", "*"]
+    repl = ["[[", "]]", "*", "---"]
     for r in repl:
         txt = txt.replace(r, "")
     repl_space = ["\n", "\t", "\xa0", "  "]
@@ -105,9 +105,11 @@ def read_markdown_notes(folder_path: str) -> dict[str, dict[str, str]]:
             "_templates",
             "_scripts",
             ".obsidian",
+            ".trash",
             "__Canvases",
             ".git",
             "_attachments",
+            "media",
         ]:
             continue
         for file in files:
@@ -117,7 +119,7 @@ def read_markdown_notes(folder_path: str) -> dict[str, dict[str, str]]:
                 # Filter out topic files
                 with open(file_path, "r") as f:
                     md = f.read()
-                if any(x in md for x in ["#topic", "#author"]):
+                if any(x in md for x in ["- moc"]):
                     continue
 
                 # Clean files
@@ -132,10 +134,7 @@ def read_markdown_notes(folder_path: str) -> dict[str, dict[str, str]]:
 
 def get_obsidian_uri(filename: str, section_name: str) -> str:
     # Given a filename and a section_name, return the advanced-uri plugin's URI so that I can click a link to the file.
-    if section_name == "":
-        return f"obsidian://advanced-uri?vault=ObsidianVault&filepath={urllib.parse.quote(filename, safe='')}"
-    else:
-        return f"obsidian://advanced-uri?vault=ObsidianVault&filepath={urllib.parse.quote(filename, safe='')}&heading={urllib.parse.quote(section_name, safe='')}"
+    return f"obsidian://open?vault=default&file={urllib.parse.quote(filename, safe='')}"
 
 
 ##############
@@ -265,14 +264,14 @@ def present_results(results: pd.Series) -> str:
     # Format the results into a nice table
     resdf = results.reset_index()
     resdf.columns = ["Note", "Section", "Similarity"]
-    resdf[["Folder", "Note"]] = resdf["Note"].str.split("/", expand=True)
+    resdf[["Folder", "Note"]] = resdf["Note"].str.split("/", n=1, expand=True)
     note_filled = resdf["Note"].fillna(resdf["Folder"])
-    resdf["Folder"] = np.where(resdf["Note"].isnull(), "Atoms", resdf["Folder"])
-    resdf["Note"] = note_filled
+    #resdf["Folder"] = np.where(resdf["Note"].isnull(), "Atoms", resdf["Folder"])
+    #resdf["Note"] = note_filled
     resdf = resdf[["Folder", "Note", "Section", "Similarity"]]
     resdf["Note"] = resdf["Note"].str.slice(0, -3)
     resdf["Similarity"] = resdf["Similarity"].round(3)
-    resdf["Folder"] = resdf["Folder"].str.slice(0, -1)
+    #resdf["Folder"] = resdf["Folder"].str.slice(0, -1)
     resdf = resdf.rename({"Folder": "Type"}, axis=1)
     resdf = resdf.rename_axis("id", axis=0)
 
