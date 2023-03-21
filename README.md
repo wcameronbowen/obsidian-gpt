@@ -61,6 +61,13 @@ In my `~/.zshrc` I then created an alias for this, such that when I type `obsidi
 alias obsidian="cd $HOME/ObsidianVault && python _scripts/obsidian_util.py"
 ```
 
+### Test File Rendering
+Parts of the script strip out and modify files/sections. To test this use the following from the root of the vault
+
+```
+python3 _scripts/test-read-files.py
+```
+
 ### Polymer dashboard
 
 The Polymer dashboard (a spaced repetition tool) requires `streamlit` to be installed (`pip install streamlit`). It can be run using:
